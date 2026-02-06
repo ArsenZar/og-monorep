@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "name": "@og/database",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "prisma migrate dev",
+    "generate": "prisma generate",
+    "seed": "prisma db seed"
+  },
+  "keywords": [],
+  "author": "senya_zar <arsenzar@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "6",
+    "prisma": "6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
