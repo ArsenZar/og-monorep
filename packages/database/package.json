@@ -1,6 +1,6 @@
 {
-  "private": true,
   "name": "@og/database",
+  "private": true,
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "prisma": "prisma",
+    "push": "prisma db push"
   },
   "keywords": [],
   "author": "senya_zar <arsenzar@gmail.com>",
