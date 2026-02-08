@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@nestjs/cli':
+        specifier: ^11.0.0
+        version: 11.0.16(@types/node@22.19.9)
       prettier:
         specifier: ^3.7.4
         version: 3.8.1

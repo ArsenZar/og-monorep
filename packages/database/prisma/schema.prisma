@@ -13,18 +13,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  INVITED
+  ACTIVE
+}
+
+enum RoleName {
+  ADMIN
+  MANAGER
+  WORKER
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  id       String     @id @default(cuid())
+  email    String     @unique
+  password String?
+  status   UserStatus @default(INVITED)
+
+  memberships Membership[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Role {
+  id             String   @id @default(cuid())
+  name           RoleName
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  memberships Membership[]
+  invites     Invite[]
+
+  @@unique([organizationId, name])
+}
+
+model Invite {
   id    String @id @default(cuid())
-  name  String @unique
-  users User[]
+  email String
+  token String @unique
+
+  organizationId String
+  roleId         String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Membership {
+  id String @id @default(cuid())
+
+  userId         String
+  organizationId String
+  roleId         String
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+}
+
+model Organization {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  roles       Role[]
+  memberships Membership[]
+  invites     Invite[]
+
+  createdAt DateTime @default(now())
 }
