@@ -1,6 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { InvitesService } from './invites.service';
 import { CreateInviteDto } from './dto/create-invite.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 
 @Controller('invites')
 export class InvitesController {
@@ -17,5 +18,10 @@ export class InvitesController {
     return {
       inviteLink: `http://localhost:3000/accept-invite?token=${token}`,
     };
+  }
+
+  @Post('/accept')
+  acceptInvite(@Body() dto: AcceptInviteDto) {
+    return this.invitesService.acceptInvite(dto);
   }
 }

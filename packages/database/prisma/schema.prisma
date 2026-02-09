@@ -24,6 +24,13 @@ enum RoleName {
   WORKER
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
 model User {
   id       String     @id @default(cuid())
   email    String     @unique
@@ -53,6 +60,8 @@ model Invite {
   id    String @id @default(cuid())
   email String
   token String @unique
+
+  status InviteStatus @default(PENDING)
 
   organizationId String
   roleId         String
