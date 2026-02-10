@@ -1,46 +1,101 @@
-import { PrismaClient, RoleName } from '@prisma/client'
+import { PrismaClient, RoleName, UserStatus } from '@prisma/client'
+import * as bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  const password = await bcrypt.hash('Admin123!', 10);
+  console.log("DATABASE_URL =", process.env.DATABASE_URL);
 
-    // ✅ 1. Create Organization
-    const org = await prisma.organization.upsert({
-        where: { slug: 'orion' },
+  await prisma.$transaction(async (tx) => {
+    
+    // 1️⃣ Organization
+    const org = await tx.organization.upsert({
+      where: { slug: 'default-org' },
+      update: {},
+      create: {
+        name: 'Default Organization',
+        slug: 'default-org',
+      },
+    })
+
+    // 2️⃣ Roles
+    const roles = await Promise.all([
+      tx.role.upsert({
+        where: {
+          organizationId_name: {
+            organizationId: org.id,
+            name: RoleName.ADMIN,
+          },
+        },
         update: {},
         create: {
-            name: 'Orion',
-            slug: 'orion',
+          name: RoleName.ADMIN,
+          organizationId: org.id,
         },
+      }),
+      tx.role.upsert({
+        where: {
+          organizationId_name: {
+            organizationId: org.id,
+            name: RoleName.MANAGER,
+          },
+        },
+        update: {},
+        create: {
+          name: RoleName.MANAGER,
+          organizationId: org.id,
+        },
+      }),
+      tx.role.upsert({
+        where: {
+          organizationId_name: {
+            organizationId: org.id,
+            name: RoleName.WORKER,
+          },
+        },
+        update: {},
+        create: {
+          name: RoleName.WORKER,
+          organizationId: org.id,
+        },
+      }),
+    ])
+
+    const adminRole = roles.find(r => r.name === RoleName.ADMIN)!
+
+    // 3️⃣ Admin user
+    const admin = await tx.user.upsert({
+      where: { email: 'admin@local.dev' },
+      update: {},
+      create: {
+        email: 'admin@local.dev',
+        password,
+        status: UserStatus.ACTIVE,
+      },
     })
 
-    // ✅ 2. Create Roles scoped to org
-    await prisma.role.createMany({
-        data: [
-            {
-                name: RoleName.ADMIN,
-                organizationId: org.id,
-            },
-            {
-                name: RoleName.MANAGER,
-                organizationId: org.id,
-            },
-            {
-                name: RoleName.WORKER,
-                organizationId: org.id,
-            },
-        ],
-        skipDuplicates: true,
+    // 4️⃣ Membership
+    await tx.membership.upsert({
+      where: {
+        userId_organizationId: {
+          userId: admin.id,
+          organizationId: org.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: admin.id,
+        organizationId: org.id,
+        roleId: adminRole.id,
+      },
     })
-
-    console.log('🌱 Organization + Roles seeded')
+  })
 }
 
 main()
-    .catch((e) => {
-        console.error(e)
-        process.exit(1)
-    })
-    .finally(async () => {
-        await prisma.$disconnect()
-    })
+  .then(() => {
+    console.log('🌱 Database seeded with SUPER ADMIN')
+  })
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())
