@@ -7,7 +7,7 @@ export class SetupController {
   constructor(private readonly setupService: SetupService) {}
 
   @Post()
-  setup(@Body() dto: SetupDto) {
+  async setup(@Body() dto: SetupDto) {
     return this.setupService.setup(dto);
   }
 }
