@@ -6,24 +6,25 @@ import { AcceptInviteDto } from './dto/accept-invite.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import type { RequestWithUser } from '../auth/types/request-with-user.type';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtUser } from '../auth/types/request-with-user.type';
 
 @Controller('invites')
 export class InvitesController {
   constructor(private invitesService: InvitesService) {}
 
   // 🔐 ТІЛЬКИ ADMIN може інвайтити
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
   async createInvite(
     @Body() dto: CreateInviteDto,
-    @Request() req: RequestWithUser,
+    @CurrentUser() user: JwtUser,
   ) {
     const token = await this.invitesService.createInvite(
       dto.email,
       dto.roleId,
-      req.user.organizationId, // 🔥 trusted source
+      user.organizationId,
     );
 
     return {
