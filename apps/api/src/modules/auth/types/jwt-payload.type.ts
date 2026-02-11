@@ -1,5 +1,7 @@
+import { RoleName } from '@prisma/client';
+
 export type JwtPayload = {
   sub: string;
-  roleId: string;
+  role: RoleName;
   organizationId: string;
 };

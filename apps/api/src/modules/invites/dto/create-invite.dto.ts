@@ -6,7 +6,4 @@ export class CreateInviteDto {
 
   @IsString()
   roleId: string;
-
-  @IsString()
-  organizationId: string;
 }

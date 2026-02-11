@@ -5,13 +5,19 @@ import { PrismaService } from '../database/prisma.service';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(organizationId: string) {
     return this.prisma.user.findMany({
+      where: {
+        memberships: {
+          some: {
+            organizationId,
+          },
+        },
+      },
       include: {
         memberships: {
           include: {
             role: true,
-            organization: true,
           },
         },
       },
