@@ -31,6 +31,75 @@ enum InviteStatus {
   CANCELLED
 }
 
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  organizationId      String
+  managerMembershipId String
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  managerMembership Membership   @relation("ManagerProjects", fields: [managerMembershipId], references: [id])
+
+  tasks Task[]
+
+  status ProjectStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([managerMembershipId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+
+  title       String
+  description String?
+
+  projectId String
+  workerMembershipId String?
+
+  templateId String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workerMembership Membership? @relation("WorkerTasks", fields: [workerMembershipId], references: [id])
+
+  template TaskTemplate? @relation(fields: [templateId], references: [id])
+
+  status TaskStatus @default(TODO)
+
+  managerComment String?
+
+  workerReport String?
+
+  startedAt DateTime?
+  completedAt DateTime?
+
+  dueDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([workerMembershipId])
+  @@index([templateId])
+}
+
 model User {
   id       String     @id @default(cuid())
   email    String     @unique
@@ -82,6 +151,9 @@ model Membership {
   organizationId String
   roleId         String
 
+  projectsManaged Project[] @relation("ManagerProjects")
+  tasksAssigned   Task[]    @relation("WorkerTasks")
+
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   role         Role         @relation(fields: [roleId], references: [id])
@@ -96,9 +168,36 @@ model Organization {
   name String
   slug String @unique
 
-  roles       Role[]
-  memberships Membership[]
-  invites     Invite[]
+  roles         Role[]
+  memberships   Membership[]
+  invites       Invite[]
+  taskTemplates TaskTemplate[]
+
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+// Task Template
+
+model TaskTemplate {
+  id String @id @default(cuid())
+
+  title       String
+  description String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // lineage
+  parentTemplateId String?
+  parentTemplate   TaskTemplate?  @relation("TemplateLineage", fields: [parentTemplateId], references: [id])
+  derivedTemplates TaskTemplate[] @relation("TemplateLineage")
+
+  createdFromTaskId String?
+
+  tasks Task[]
 
   createdAt DateTime @default(now())
+
+  @@index([organizationId])
 }
