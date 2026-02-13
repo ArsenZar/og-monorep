@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { SetupModule } from './modules/setup/setup.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TaskTemplatesModule } from './modules/task-templates/task-templates.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TaskTemplatesModule } from './modules/task-templates/task-templates.mod
     AuthModule,
     ProjectsModule,
     TaskTemplatesModule,
+    TasksModule,
   ],
 })
 export class AppModule {}
