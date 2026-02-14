@@ -1,12 +1,115 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import type { JwtUser } from '../auth/types/jwt-user.type';
 
+import { CreateTaskEventDto, TaskEventType } from './dto/create-task-event.dto';
+import { AssignTaskDto } from './dto/assign-task.dto';
+
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
+
+  async assign(taskId: string, dto: AssignTaskDto, user: JwtUser) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { project: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    // org isolation
+    if (task.project.organizationId !== user.organizationId) {
+      throw new ForbiddenException('Wrong organization');
+    }
+
+    const membership = await this.prisma.membership.findUnique({
+      where: { id: dto.workerMembershipId },
+      include: { role: true },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Membership not found');
+    }
+
+    if (membership.organizationId !== user.organizationId) {
+      throw new ForbiddenException('Wrong organization');
+    }
+
+    if (membership.role.name !== 'WORKER') {
+      throw new ForbiddenException('Can assign only WORKER');
+    }
+
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        workerMembershipId: membership.id,
+      },
+    });
+  }
+
+  async createEvent(taskId: string, dto: CreateTaskEventDto, user: JwtUser) {
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        userId: user.userId,
+        organizationId: user.organizationId,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Membership not found');
+    }
+
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        project: {
+          organizationId: user.organizationId,
+        },
+      },
+    });
+
+    if (!task) {
+      throw new ForbiddenException('Task not found in your organization');
+    }
+
+    // 🔥 Worker ownership check
+    if (task.workerMembershipId !== membership.id) {
+      throw new ForbiddenException('Not your task');
+    }
+
+    await this.prisma.taskEvent.create({
+      data: {
+        taskId,
+        membershipId: membership.id,
+        type: dto.type,
+      },
+    });
+
+    // optional — update status
+    if (dto.type === TaskEventType.STARTED) {
+      await this.prisma.task.update({
+        where: { id: taskId },
+        data: { status: 'IN_PROGRESS' },
+      });
+    }
+
+    if (dto.type === TaskEventType.COMPLETED) {
+      await this.prisma.task.update({
+        where: { id: taskId },
+        data: { status: 'DONE' },
+      });
+    }
+
+    return { success: true };
+  }
 
   async create(dto: CreateTaskDto, user: JwtUser) {
     // ✅ Перевіряємо що project в цій org

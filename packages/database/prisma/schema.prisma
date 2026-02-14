@@ -43,6 +43,13 @@ enum TaskStatus {
   BLOCKED
 }
 
+enum TaskEventType {
+  STARTED
+  PAUSED
+  RESUMED
+  COMPLETED
+}
+
 model Project {
   id          String  @id @default(cuid())
   name        String
@@ -94,6 +101,8 @@ model Task {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  events TaskEvent[]
 
   @@index([projectId])
   @@index([workerMembershipId])
@@ -160,6 +169,8 @@ model Membership {
 
   createdAt DateTime @default(now())
 
+  taskEvents TaskEvent[]
+
   @@unique([userId, organizationId])
 }
 
@@ -200,4 +211,20 @@ model TaskTemplate {
   createdAt DateTime @default(now())
 
   @@index([organizationId])
+}
+
+model TaskEvent {
+  id String @id @default(cuid())
+
+  taskId String
+  membershipId String
+
+  type TaskEventType
+
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id])
+
+  @@index([taskId])
 }
