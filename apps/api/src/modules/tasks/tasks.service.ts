@@ -97,14 +97,20 @@ export class TasksService {
     if (dto.type === TaskEventType.STARTED) {
       await this.prisma.task.update({
         where: { id: taskId },
-        data: { status: 'IN_PROGRESS' },
+        data: {
+          status: 'IN_PROGRESS',
+          startedAt: task.startedAt ?? new Date(),
+        },
       });
     }
 
     if (dto.type === TaskEventType.COMPLETED) {
       await this.prisma.task.update({
         where: { id: taskId },
-        data: { status: 'DONE' },
+        data: {
+          status: 'DONE',
+          completedAt: new Date(),
+        },
       });
     }
 
