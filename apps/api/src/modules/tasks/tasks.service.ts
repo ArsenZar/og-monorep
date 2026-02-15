@@ -11,6 +11,8 @@ import type { JwtUser } from '../auth/types/jwt-user.type';
 import { CreateTaskEventDto, TaskEventType } from './dto/create-task-event.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 
+import { UpdateTaskReportDto } from './dto/update-task-report.dto';
+
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
@@ -223,6 +225,49 @@ export class TasksService {
       },
       orderBy: {
         createdAt: 'desc',
+      },
+    });
+  }
+
+  async updateReport(taskId: string, dto: UpdateTaskReportDto, user: JwtUser) {
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        userId: user.userId,
+        organizationId: user.organizationId,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Membership not found');
+    }
+
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        project: {
+          organizationId: user.organizationId,
+        },
+      },
+    });
+
+    if (!task) {
+      throw new ForbiddenException('Task not found in your organization');
+    }
+
+    // 🔥 перевірка власності
+    if (task.workerMembershipId !== membership.id) {
+      throw new ForbiddenException('Not your task');
+    }
+
+    // 🔥 дозволяємо report тільки якщо DONE
+    if (task.status !== 'DONE') {
+      throw new ForbiddenException('Cannot add report until task is DONE');
+    }
+
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        workerReport: dto.report,
       },
     });
   }

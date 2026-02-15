@@ -17,10 +17,22 @@ import type { JwtUser } from '../auth/types/jwt-user.type';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { CreateTaskEventDto } from './dto/create-task-event.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
+import { UpdateTaskReportDto } from './dto/update-task-report.dto';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private tasksService: TasksService) {}
+
+  @Patch(':id/report')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('WORKER')
+  updateReport(
+    @Param('id') taskId: string,
+    @Body() dto: UpdateTaskReportDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.tasksService.updateReport(taskId, dto, user);
+  }
 
   // ✅ створювати можуть тільки manager + admin
   @Post()
