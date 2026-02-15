@@ -8,6 +8,7 @@ import { SetupModule } from './modules/setup/setup.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TaskTemplatesModule } from './modules/task-templates/task-templates.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
     ProjectsModule,
     TaskTemplatesModule,
     TasksModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}
